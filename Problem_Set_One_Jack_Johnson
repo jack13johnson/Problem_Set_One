@@ -39,4 +39,3 @@ A few observations:
 - Instead of using gradient descent (a common training algorithm for neural networks), it uses a random walk approach.
 - This approach might not be efficient or lead to a highly accurate model, but it's an interesting way to explore the dataset and model training.
 
-If you have any specific questions about certain parts of the code or its intent, feel free to ask!
