@@ -1,110 +1,42 @@
-**Load MNIST and Show Montage**
+https://colab.research.google.com/drive/1PH8Ah8PKtNnv6shzswtRbHSpfvZQeBdH?usp=sharing
 
-%%capture
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-from torchvision import datasets
-from skimage.util import montage
-!pip install wandb
-import wandb as wb
-from skimage.io import imread
-def GPU(data):
-    return torch.tensor(data, requires_grad=True, dtype=torch.float, device=torch.device('cuda'))
+The provided code contains operations and functions related to neural networks, specifically for training on image datasets like MNIST (a dataset of handwritten digits). Let's break down its main components:
 
-def GPU_data(data):
-    return torch.tensor(data, requires_grad=False, dtype=torch.float, device=torch.device('cuda'))
-def plot(x):
-    if type(x) == torch.Tensor :
-        x = x.cpu().detach().numpy()
+1. **Library Imports**:
+   - Various Python libraries such as NumPy, Matplotlib, PyTorch, and others are imported.
 
-    fig, ax = plt.subplots()
-    im = ax.imshow(x, cmap = 'gray')
-    ax.axis('off')
-    fig.set_size_inches(10, 10)
-    plt.show()
-def plotfc(x):
-    if type(x) == torch.Tensor :
-        x = x.cpu().detach().numpy()
+2. **Setup and Utility Functions**:
+   - `GPU()` and `GPU_data()`: These functions move data to the GPU and create PyTorch tensors from the data.
+   - `plot()`, `plotfc()`, and `montage_plot()`: Visualization functions to display images and image montages.
+   - `one_hot()`: A function that performs one-hot encoding on label data.
 
-    fig, ax = plt.subplots()
-    im = ax.imshow(x, cmap = 'cool')
-    ax.axis('off')
-    fig.set_size_inches(10, 10)
-    plt.colorbar(im)
-    plt.show()
-def montage_plot(x):
-    x = np.pad(x, pad_width=((0, 0), (1, 1), (1, 1)), mode='constant', constant_values=0)
-    plot(montage(x))
-def one_hot(y):
-    y2 = GPU_data(torch.zeros((y.shape[0],10)))
-    for i in range(y.shape[0]):
-        y2[i,int(y[i])] = 1
-    return y2
-# #MNIST
-train_set = datasets.MNIST('./data', train=True, download=True)
-test_set = datasets.MNIST('./data', train=False, download=True)
+3. **Loading Datasets**:
+   - The code uses PyTorch's `datasets` module to load the MNIST dataset.
+   - Although KMNIST and FashionMNIST datasets are commented out, they could also be used.
 
-#KMNIST
-#train_set = datasets.KMNIST('./data', train=True, download=True)
-#test_set = datasets.KMNIST('./data', train=False, download=True)
+4. **Data Preprocessing**:
+   - The images from the training set are converted to numpy arrays, normalized by dividing by 255 (to get pixel values between 0 and 1), and reshaped.
+   - A montage of images is displayed using the `montage_plot()` function.
 
-#Fashion MNIST
-# train_set = datasets.FashionMNIST('./data', train=True, download=True)
-# test_set = datasets.FashionMNIST('./data', train=False, download=True)
-X = train_set.data.numpy()
-X_test = test_set.data.numpy()
-Y = train_set.targets.numpy()
-Y_test = test_set.targets.numpy()
+5. **Random y=mx Model on MNIST**:
+   - The images are reshaped from `(60000, 1, 28, 28)` to `(60000, 784)`.
+   - The reshaped image data is moved to GPU using the `GPU_data()` function.
+   - A simple linear model `y = M@x` is used where `M` is a matrix of random values. This essentially computes the matrix product of `M` and `x` to predict `y`.
 
-X = X[:,None,:,:]/255
-X_test = X_test[:,None,:,:]/255
-montage_plot(X[125:150,0,:,:])
-**Run Random y=mx Model on MNIST**
-X = X.reshape(X.shape[0],784)                    #Reshape image data tensor from (60000, 1, 28, 28) to (60000, 784)
-X_test = X_test.reshape(X_test.shape[0],784)     #Reshape image test data tensor from (60000, 1, 28, 28) to (60000, 784)
-X.shape
-X = GPU_data(X)
-Y = GPU_data(Y)
-X_test = GPU_data(X_test)
-Y_test = GPU_data(Y_test)
-X.shape
-x = X[:,0:1]
-x.shape
-M = GPU(np.random.rand(10,784))
-y = M@x
-batch_size = 64
+6. **Train Random Walk Model to at Least 75%**:
+   - This is a simple training loop for the linear model:
+     - The code uses a "random walk" approach to find the best `m` matrix. In each iteration of the loop:
+       - A random matrix `m_random` is generated.
+       - The current best matrix `m_best` is adjusted by a tiny step in the direction of `m_random`.
+       - Predictions `y` are computed using the adjusted matrix `m`.
+       - The accuracy of these predictions is computed.
+       - If this accuracy is better than the previous best, the new matrix `m` and accuracy are stored.
+     - The loop continues for 100,000 iterations, with the goal to reach at least 75% accuracy.
 
-x = X[:,0:batch_size]
+A few observations:
 
-M = GPU(np.random.rand(10,784))
+- The code seems to be an experimental attempt to train a model on the MNIST dataset using a unique approach.
+- Instead of using gradient descent (a common training algorithm for neural networks), it uses a random walk approach.
+- This approach might not be efficient or lead to a highly accurate model, but it's an interesting way to explore the dataset and model training.
 
-y = M@x
-
-y = torch.argmax(y,0)
-
-torch.sum((y == Y[0:batch_size]))/batch_size
-
-**Train Random Walk Model to at Least 75%**
-m_best = 0
-acc_best = 0
-
-for i in range(100000):
-
-    step = 0.0000000001
-
-    m_random = GPU_data(np.random.randn(10,784))
-
-    m = m_best  + step*m_random
-
-    y = m@X
-
-    y = torch.argmax(y, axis=0)
-
-    acc = ((y == Y)).sum()/len(Y)
-
-
-    if acc > acc_best:
-        print(acc.item())
-        m_best = m
-        acc_best = acc
+If you have any specific questions about certain parts of the code or its intent, feel free to ask!
